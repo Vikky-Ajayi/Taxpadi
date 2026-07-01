@@ -1,160 +1,392 @@
-import { Shield, Smartphone, Zap } from "lucide-react";
+import { useState } from "react";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Star, ChevronDown, ChevronUp, Shield, MessageSquare, Zap, FileText, CreditCard, CheckCircle } from "lucide-react";
+
+const FAQ_ITEMS = [
+  {
+    q: "Can Nigerians file taxes without a TIN?",
+    a: "No — you need a Tax Identification Number (TIN) to file with FIRS. TaxPay walks you through getting one free via TaxPro Max in under 10 minutes.",
+  },
+  {
+    q: "Which taxes does TaxPay calculate?",
+    a: "TaxPay computes Personal Income Tax (PIT) under the Nigeria Tax Act 2025 for salaried employees and freelancers/self-employed individuals, including PAYE, pension deductions, and all applicable reliefs.",
+  },
+  {
+    q: "Is my bank statement data secure?",
+    a: "Yes. Your data is encrypted in transit and at rest. We never share your financial data with third parties. Statement data is used solely for tax computation.",
+  },
+  {
+    q: "How do I transfer money to pay my tax?",
+    a: "We generate a dedicated Nomba virtual account number for your tax payment. Transfer your exact tax amount to that account and FIRS confirmation is automatic.",
+  },
+  {
+    q: "What if I'm a freelancer with multiple income sources?",
+    a: "TaxPay handles multiple income streams. Upload statements from each source and our classifier aggregates total income before running the NTA 2025 calculation.",
+  },
+  {
+    q: "How quickly is the tax report ready?",
+    a: "Instantly. Once you upload your bank statement, classification and tax calculation complete in seconds.",
+  },
+];
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-gray-200 py-5">
+      <button
+        className="flex w-full items-start justify-between text-left gap-4"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="font-semibold text-[#0d0d0d] text-[15px] leading-snug">{q}</span>
+        {open ? (
+          <ChevronUp className="shrink-0 mt-0.5 text-gray-500" size={18} />
+        ) : (
+          <ChevronDown className="shrink-0 mt-0.5 text-gray-500" size={18} />
+        )}
+      </button>
+      {open && (
+        <p className="mt-3 text-gray-600 text-sm leading-relaxed">{a}</p>
+      )}
+    </div>
+  );
+}
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+    <div className="min-h-screen bg-white text-[#0d0d0d] font-sans">
+
+      {/* ── HEADER ── */}
+      <header className="sticky top-0 z-50 bg-[#0d0d0d]">
+        <div className="max-w-6xl mx-auto px-6 flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
-              <Zap className="h-5 w-5" />
+            <div className="bg-[#2aaa6c] text-white p-1.5 rounded-lg">
+              <Zap className="h-4 w-4" />
             </div>
-            <span className="text-xl font-bold tracking-tight">TaxPay</span>
+            <span className="text-white text-xl font-bold tracking-tight">TaxPay</span>
           </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">
-              Log in
-            </Link>
+          <nav className="flex items-center gap-6">
+            <a href="#how-it-works" className="text-gray-300 text-sm hover:text-white transition-colors hidden sm:block">How it Works</a>
+            <a href="#faq" className="text-gray-300 text-sm hover:text-white transition-colors hidden sm:block">FAQ</a>
+            <Link href="/login" className="text-gray-300 text-sm hover:text-white transition-colors">Log in</Link>
             <Link href="/register">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Get Started
-              </Button>
+              <button className="bg-[#2aaa6c] hover:bg-[#239960] text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
+                Get Free Consultation
+              </button>
             </Link>
           </nav>
         </div>
       </header>
 
-      <main className="flex-1">
-        <section className="relative overflow-hidden py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-8 text-center">
-              <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary/10 text-primary">
-                The Nigeria Tax Act 2025 Guide
+      {/* ── HERO ── */}
+      <section className="bg-white pt-16 pb-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="flex text-[#2aaa6c]">
+                  {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
+                </div>
+                <span className="text-sm text-gray-500">Based on verified customer feedback</span>
               </div>
-              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-                Tax, explained like you're <br className="hidden sm:inline" />
-                <span className="text-primary">talking to a friend.</span>
+              <h1 className="text-5xl lg:text-6xl font-extrabold leading-[1.05] tracking-tight text-[#0d0d0d]">
+                File Your Tax,<br />
+                <span className="text-[#2aaa6c]">From Anywhere</span><br />
+                in Nigeria
               </h1>
-              <p className="max-w-[700px] text-lg text-muted-foreground sm:text-xl">
-                The personal tax guide for 15 million Nigerians. Upload your bank statement, let AI do the math, and pay securely. As simple as sending a WhatsApp message.
+              <p className="text-gray-600 text-lg leading-relaxed max-w-lg">
+                Salaried employees, freelancers, and business owners — with a dedicated AI that handles your income analysis, tax calculation, and FIRS filing end to end.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <div className="flex flex-wrap gap-3 pt-2">
                 <Link href="/register">
-                  <Button size="lg" className="w-full sm:w-auto text-base h-12 px-8 shadow-lg shadow-primary/20">
-                    Create Free Account
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto text-base h-12 px-8">
-                    I already have an account
-                  </Button>
+                  <button className="bg-[#2aaa6c] hover:bg-[#239960] text-white font-bold px-7 py-3.5 rounded-xl text-sm transition-colors shadow-lg shadow-green-900/20">
+                    Get Free Consultation
+                  </button>
                 </Link>
               </div>
+              <div className="flex flex-wrap gap-6 pt-2 text-sm text-gray-500">
+                <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-[#2aaa6c]" /> AI tax advisory service</span>
+                <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-[#2aaa6c]" /> Free consultation — no obligation</span>
+                <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-[#2aaa6c]" /> WhatsApp-first support</span>
+              </div>
             </div>
-          </div>
-        </section>
 
-        <section className="py-24 bg-muted/50">
-          <div className="container px-4 md:px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">How TaxPay works</h2>
-              <p className="mt-4 text-lg text-muted-foreground">Three simple steps to financial clarity.</p>
-            </div>
-            <div className="grid gap-12 lg:grid-cols-3">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <span className="text-2xl font-bold">1</span>
-                </div>
-                <h3 className="text-xl font-bold">Upload Statement</h3>
-                <p className="text-muted-foreground">
-                  Paste your raw bank statement CSV. We securely process your data to understand your income.
-                </p>
+            {/* Eligibility card */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8 space-y-5">
+              <div>
+                <h2 className="text-lg font-bold text-[#0d0d0d]">Check Your Tax Liability</h2>
+                <p className="text-sm text-gray-500 mt-1">Answer 3 quick questions. Takes 30 seconds.</p>
               </div>
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <span className="text-2xl font-bold">2</span>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">What is your employment type?</label>
+                  <select className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2aaa6c]/40 bg-white">
+                    <option>Salaried employee</option>
+                    <option>Freelancer / Self-employed</option>
+                    <option>Business owner</option>
+                  </select>
                 </div>
-                <h3 className="text-xl font-bold">AI Calculation</h3>
-                <p className="text-muted-foreground">
-                  Our system categorizes your transactions and computes your exact tax liability under the latest Nigerian tax laws.
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <span className="text-2xl font-bold">3</span>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">What is your approximate annual income?</label>
+                  <select className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2aaa6c]/40 bg-white">
+                    <option>Below ₦800,000</option>
+                    <option>₦800,000 – ₦3,000,000</option>
+                    <option>₦3,000,000 – ₦10,000,000</option>
+                    <option>Above ₦10,000,000</option>
+                  </select>
                 </div>
-                <h3 className="text-xl font-bold">Pay & File</h3>
-                <p className="text-muted-foreground">
-                  Make your payment via Nomba virtual account and get step-by-step guidance for TaxPro Max filing.
-                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Do you have a TIN?</label>
+                  <select className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2aaa6c]/40 bg-white">
+                    <option>Yes</option>
+                    <option>No, but I want one</option>
+                    <option>Not sure</option>
+                  </select>
+                </div>
               </div>
+              <Link href="/register" className="block">
+                <button className="w-full bg-[#2aaa6c] hover:bg-[#239960] text-white font-bold py-3.5 rounded-xl text-sm transition-colors">
+                  Get Free Consultation →
+                </button>
+              </Link>
+              <p className="text-center text-xs text-gray-400">No commitment. A dedicated advisor will explain what's possible for your tax situation.</p>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="py-24 border-t">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-12 lg:grid-cols-2 items-center">
-              <div className="space-y-6">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ask questions in your preferred language</h2>
-                <p className="text-lg text-muted-foreground">
-                  Tax shouldn't require a law degree. Chat with our AI assistant in English, Pidgin, Hausa, or Igbo to understand your liabilities and reliefs.
-                </p>
-                <ul className="space-y-4">
-                  <li className="flex items-center gap-3">
-                    <Shield className="h-5 w-5 text-primary" />
-                    <span>CBN-certified bank grade security</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Smartphone className="h-5 w-5 text-primary" />
-                    <span>WhatsApp-style chat interface</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Zap className="h-5 w-5 text-primary" />
-                    <span>Instant tax calculation updates</span>
-                  </li>
-                </ul>
+      {/* ── STATS STRIP ── */}
+      <section className="border-y border-gray-100 bg-white py-10">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            <div>
+              <div className="text-3xl font-extrabold text-[#0d0d0d]">₦800k</div>
+              <div className="text-sm text-gray-500 mt-1">Personal relief under NTA 2025 — every taxpayer gets this</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-[#0d0d0d]">0–24%</div>
+              <div className="text-sm text-gray-500 mt-1">Tax rate bands — we find the right band for your income</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-[#0d0d0d]">30 sec</div>
+              <div className="text-sm text-gray-500 mt-1">Time to get your estimated tax liability with TaxPay</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-[#0d0d0d]">No cap</div>
+              <div className="text-sm text-gray-500 mt-1">Foreign income & multiple streams — we handle all of it</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHAT YOU CAN DO ── */}
+      <section className="py-24 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="mb-12">
+            <span className="text-xs font-bold tracking-widest text-[#2aaa6c] uppercase">What you can do</span>
+            <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-[#0d0d0d]">
+              Three paths into tax compliance<br className="hidden lg:block" /> — all managed for you
+            </h2>
+          </div>
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-44 bg-gradient-to-br from-[#1a7a4a] via-[#2aaa6c] to-[#5dd49a] flex items-center justify-center">
+                <FileText size={48} className="text-white/80" />
               </div>
-              <div className="bg-card rounded-2xl border shadow-xl overflow-hidden">
-                <div className="bg-secondary p-4 text-secondary-foreground flex items-center gap-3">
-                  <div className="bg-primary/20 p-2 rounded-full">
-                    <Zap className="h-5 w-5 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <div className="font-medium">TaxPay AI</div>
-                    <div className="text-xs opacity-80">Online</div>
-                  </div>
+              <div className="p-6 bg-white">
+                <h3 className="font-bold text-[#0d0d0d] text-lg mb-2">Salaried</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">For PAYE employees. Confirm your employer deductions are correct and reclaim overpaid tax automatically.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">PAYE</span>
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">Pension</span>
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">Annual relief</span>
                 </div>
-                <div className="p-6 space-y-4 bg-[#EFEAE2] dark:bg-card min-h-[300px]">
-                  <div className="flex justify-end">
-                    <div className="bg-[#D9FDD3] dark:bg-primary text-foreground dark:text-primary-foreground px-4 py-2 rounded-lg rounded-tr-none max-w-[80%] shadow-sm">
-                      <p>How much tax do I owe this year? I'm a freelancer.</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-start">
-                    <div className="bg-white dark:bg-muted text-foreground px-4 py-2 rounded-lg rounded-tl-none max-w-[80%] shadow-sm">
-                      <p>Based on your uploaded statement, your gross income is ₦4,500,000. After deducting ₦200,000 personal relief, your taxable income is ₦4,300,000. Your estimated tax liability is ₦410,000.</p>
-                      <p className="text-xs text-muted-foreground mt-1">Want me to break down the calculation bands for you?</p>
-                    </div>
-                  </div>
+                <Link href="/register" className="mt-4 block text-sm font-semibold text-[#2aaa6c] hover:underline">Get started →</Link>
+              </div>
+            </div>
+            {/* Card 2 */}
+            <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-44 bg-gradient-to-br from-[#0e4d6e] via-[#1a7fa8] to-[#4ab8d9] flex items-center justify-center">
+                <MessageSquare size={48} className="text-white/80" />
+              </div>
+              <div className="p-6 bg-white">
+                <h3 className="font-bold text-[#0d0d0d] text-lg mb-2">Freelancer</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">Multiple clients, irregular income? Upload your bank statement and let TaxPay aggregate and classify every transaction.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">Self-assessment</span>
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">Multi-stream</span>
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">AI classifier</span>
                 </div>
+                <Link href="/register" className="mt-4 block text-sm font-semibold text-[#2aaa6c] hover:underline">Get started →</Link>
+              </div>
+            </div>
+            {/* Card 3 */}
+            <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-44 bg-gradient-to-br from-[#6b2fa0] via-[#9b51e0] to-[#c18cf0] flex items-center justify-center">
+                <CreditCard size={48} className="text-white/80" />
+              </div>
+              <div className="p-6 bg-white">
+                <h3 className="font-bold text-[#0d0d0d] text-lg mb-2">Filing & Payment</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">Pay your exact tax amount via a dedicated Nomba virtual account, then file on TaxPro Max with AI-guided step completion.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">Nomba VA</span>
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">TaxPro Max</span>
+                  <span className="text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">FIRS receipt</span>
+                </div>
+                <Link href="/register" className="mt-4 block text-sm font-semibold text-[#2aaa6c] hover:underline">Get started →</Link>
               </div>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
 
-      <footer className="border-t py-12 bg-muted/20">
-        <div className="container flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            <span className="text-lg font-bold">TaxPay</span>
+      {/* ── THE PROCESS ── */}
+      <section id="how-it-works" className="py-24 bg-[#0d0d0d]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold tracking-widest text-[#2aaa6c] uppercase">The process</span>
+            <h2 className="mt-3 text-4xl font-extrabold text-white">
+              Your advisor handles everything.<br className="hidden lg:block" /> You just decide.
+            </h2>
           </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} TaxPay. The Nigeria Tax Act 2025 Guide.
+          <div className="grid lg:grid-cols-3 gap-8">
+            {[
+              {
+                n: "1",
+                title: "Upload Statement",
+                desc: "Paste or upload your bank statement CSV. Our classifier reads every transaction and identifies income vs expenses in seconds.",
+                icon: <FileText size={22} className="text-[#2aaa6c]" />,
+              },
+              {
+                n: "2",
+                title: "We Analyse & Calculate",
+                desc: "Including income, pension deductions, reliefs, and NTA 2025 tax bands. We produce a complete breakdown — what you owe and why.",
+                icon: <Shield size={22} className="text-[#2aaa6c]" />,
+              },
+              {
+                n: "3",
+                title: "Pay & File on TaxPro Max",
+                desc: "Transfer to your unique Nomba virtual account, then follow our AI wizard to file on TaxPro Max. Done.",
+                icon: <CreditCard size={22} className="text-[#2aaa6c]" />,
+              },
+            ].map((step) => (
+              <div key={step.n} className="bg-[#1a1a1a] rounded-2xl p-7 border border-white/5">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-4xl font-extrabold text-white/10">{step.n}</span>
+                  <div className="bg-[#2aaa6c]/10 p-2 rounded-lg">{step.icon}</div>
+                </div>
+                <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section className="py-24 bg-[#111111]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold tracking-widest text-[#2aaa6c] uppercase">What our users say</span>
+            <h2 className="mt-3 text-4xl font-extrabold text-white">
+              Nigerians filing their taxes<br className="hidden lg:block" /> — without the stress
+            </h2>
+          </div>
+          <div className="grid lg:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "I was nervous about filing as a freelancer. TaxPay showed me exactly how much I owed and generated my virtual account on the spot. The whole process took under an hour.",
+                name: "Chukwuemeka A.",
+                role: "Freelance designer, Lagos",
+                stars: 5,
+              },
+              {
+                quote: "I wanted to invest my dollars smarter. TaxPay found ₦180,000 in missed reliefs on my salary — money I didn't know I was leaving on the table.",
+                name: "Adaeze N.",
+                role: "Software Engineer, Abuja",
+                stars: 5,
+              },
+              {
+                quote: "My daughter is studying in Leeds. I file taxes in both countries. TaxPay handled the Nigerian side completely — it was the best financial decision we've made.",
+                name: "Biodun O.",
+                role: "Business owner, Port Harcourt",
+                stars: 5,
+              },
+            ].map((t, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-7 flex flex-col justify-between">
+                <div>
+                  <div className="flex text-[#2aaa6c] mb-4">
+                    {[...Array(t.stars)].map((_, j) => <Star key={j} size={14} fill="currentColor" />)}
+                  </div>
+                  <p className="text-gray-300 text-sm leading-relaxed">"{t.quote}"</p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-white/10">
+                  <div className="font-semibold text-white text-sm">{t.name}</div>
+                  <div className="text-gray-500 text-xs mt-0.5">{t.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section id="faq" className="py-24 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="mb-12">
+            <span className="text-xs font-bold tracking-widest text-[#2aaa6c] uppercase">Common questions</span>
+            <h2 className="mt-3 text-4xl font-extrabold text-[#0d0d0d]">
+              Everything Nigerians<br className="hidden lg:block" /> ask us about tax
+            </h2>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-x-16">
+            <div>
+              {FAQ_ITEMS.slice(0, 3).map((item, i) => (
+                <FaqItem key={i} {...item} />
+              ))}
+            </div>
+            <div>
+              {FAQ_ITEMS.slice(3).map((item, i) => (
+                <FaqItem key={i} {...item} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── BOTTOM CTA ── */}
+      <section className="py-24 bg-gradient-to-br from-[#0d1f14] via-[#0d2b1a] to-[#0d1222]">
+        <div className="max-w-3xl mx-auto px-6 text-center space-y-6">
+          <h2 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight">
+            Your tax compliance starts<br className="hidden lg:block" /> with one free call.
+          </h2>
+          <p className="text-gray-400 text-lg">
+            No commitment. A dedicated advisor will explain what's possible for your tax situation.
           </p>
+          <Link href="/register">
+            <button className="bg-[#2aaa6c] hover:bg-[#239960] text-white font-bold px-10 py-4 rounded-xl text-base transition-colors shadow-lg shadow-green-900/30 mt-2">
+              Get Free Consultation
+            </button>
+          </Link>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer className="bg-[#0a0a0a] py-10 border-t border-white/5">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <div className="bg-[#2aaa6c] text-white p-1.5 rounded-lg">
+              <Zap className="h-4 w-4" />
+            </div>
+            <span className="text-white font-bold text-lg">TaxPay</span>
+          </div>
+          <nav className="flex items-center gap-6 text-sm text-gray-500">
+            <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How it Works</a>
+            <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
+            <Link href="/login" className="hover:text-gray-300 transition-colors">Login</Link>
+            <Link href="/register" className="hover:text-gray-300 transition-colors">Sign up</Link>
+          </nav>
+          <p className="text-gray-600 text-xs">© {new Date().getFullYear()} TaxPay. Nigeria Tax Act 2025.</p>
         </div>
       </footer>
     </div>
