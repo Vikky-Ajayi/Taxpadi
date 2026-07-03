@@ -25,7 +25,11 @@ app.use(
     },
   }),
 );
-app.use(cors());
+const allowedOrigins = process.env.NODE_ENV === "production"
+  ? ["https://taxmata.vercel.app"]
+  : true; // allow all in development
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
