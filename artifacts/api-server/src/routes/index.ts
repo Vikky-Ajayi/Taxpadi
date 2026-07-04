@@ -8,6 +8,7 @@ import chatRouter from "./chat.js";
 import paymentsRouter from "./payments.js";
 import filingRouter from "./filing.js";
 import dashboardRouter from "./dashboard.js";
+import whatsappRouter from "./whatsapp.js";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use("/chat", chatRouter);
 router.use("/payments", paymentsRouter);
 router.use("/filing", filingRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/whatsapp", whatsappRouter);
 
 export default router;
