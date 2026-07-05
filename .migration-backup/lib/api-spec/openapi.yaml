@@ -1,0 +1,952 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: TaxPay API — Nigerian AI tax assistant
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: statements
+    description: Bank statement upload and management
+  - name: transactions
+    description: Transaction classification
+  - name: tax
+    description: Tax calculation (Nigeria Tax Act 2025)
+  - name: chat
+    description: AI chat interface
+  - name: payments
+    description: Nomba sandbox payment
+  - name: filing
+    description: TaxPro Max filing assistant
+  - name: dashboard
+    description: Dashboard summary endpoints
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateMe
+      tags: [auth]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /statements:
+    get:
+      operationId: listStatements
+      tags: [statements]
+      summary: List all uploaded bank statements
+      responses:
+        "200":
+          description: List of statements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Statement"
+    post:
+      operationId: createStatement
+      tags: [statements]
+      summary: Upload a new bank statement (CSV/PDF parsed on backend)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementInput"
+      responses:
+        "201":
+          description: Statement uploaded and parsed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Statement"
+
+  /statements/{id}:
+    get:
+      operationId: getStatement
+      tags: [statements]
+      summary: Get a specific statement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Statement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Statement"
+    delete:
+      operationId: deleteStatement
+      tags: [statements]
+      summary: Delete a statement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /transactions:
+    get:
+      operationId: listTransactions
+      tags: [transactions]
+      summary: List transactions for a statement
+      parameters:
+        - name: statementId
+          in: query
+          schema:
+            type: integer
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: taxable
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /transactions/{id}:
+    patch:
+      operationId: updateTransaction
+      tags: [transactions]
+      summary: Reclassify a transaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionUpdate"
+      responses:
+        "200":
+          description: Updated transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /transactions/summary:
+    get:
+      operationId: getTransactionSummary
+      tags: [transactions]
+      summary: Aggregated taxable/non-taxable summary for a statement
+      parameters:
+        - name: statementId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transaction summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSummary"
+
+  /tax/calculate:
+    post:
+      operationId: calculateTax
+      tags: [tax]
+      summary: Calculate tax liability from classified transactions (Nigeria Tax Act 2025)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxCalculationInput"
+      responses:
+        "201":
+          description: Tax calculation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxCalculation"
+
+  /tax/calculations:
+    get:
+      operationId: listTaxCalculations
+      tags: [tax]
+      summary: List past tax calculations
+      responses:
+        "200":
+          description: List of calculations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TaxCalculation"
+
+  /tax/calculations/{id}:
+    get:
+      operationId: getTaxCalculation
+      tags: [tax]
+      summary: Get a specific tax calculation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tax calculation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxCalculation"
+
+  /chat/messages:
+    get:
+      operationId: listChatMessages
+      tags: [chat]
+      summary: Get conversation history
+      parameters:
+        - name: sessionId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chat messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send a message to the AI assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageInput"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+
+  /payments:
+    get:
+      operationId: listPayments
+      tags: [payments]
+      summary: List all payments
+      responses:
+        "200":
+          description: List of payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+    post:
+      operationId: createPayment
+      tags: [payments]
+      summary: Create a Nomba sandbox virtual account for tax payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "201":
+          description: Payment created with virtual account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /payments/{id}:
+    get:
+      operationId: getPayment
+      tags: [payments]
+      summary: Get payment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /payments/{id}/confirm:
+    post:
+      operationId: confirmPayment
+      tags: [payments]
+      summary: Confirm payment (sandbox)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /filing/sessions:
+    get:
+      operationId: listFilingSessions
+      tags: [filing]
+      summary: List filing sessions
+      responses:
+        "200":
+          description: Filing sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FilingSession"
+    post:
+      operationId: createFilingSession
+      tags: [filing]
+      summary: Start a TaxPro Max filing session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FilingSessionInput"
+      responses:
+        "201":
+          description: Filing session with auto-fill data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilingSession"
+
+  /filing/sessions/{id}:
+    get:
+      operationId: getFilingSession
+      tags: [filing]
+      summary: Get a filing session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Filing session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilingSession"
+    patch:
+      operationId: updateFilingSession
+      tags: [filing]
+      summary: Update filing session step
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FilingSessionUpdate"
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilingSession"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get overall dashboard summary — tax liability, payments, filing status
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    RegisterInput:
+      type: object
+      required: [email, password, fullName, phone]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        fullName:
+          type: string
+        phone:
+          type: string
+        tin:
+          type: ["string", "null"]
+        language:
+          type: string
+          enum: [en, pidgin, ha, ig]
+          default: en
+        employmentType:
+          type: string
+          enum: [salaried, freelancer, business_owner, other]
+          default: salaried
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+
+    User:
+      type: object
+      required: [id, email, fullName, phone, language, employmentType, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        tin:
+          type: ["string", "null"]
+        hasTin:
+          type: boolean
+        language:
+          type: string
+          enum: [en, pidgin, ha, ig]
+        employmentType:
+          type: string
+          enum: [salaried, freelancer, business_owner, other]
+        createdAt:
+          type: string
+          format: date-time
+
+    UserUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        tin:
+          type: string
+        language:
+          type: string
+          enum: [en, pidgin, ha, ig]
+        employmentType:
+          type: string
+          enum: [salaried, freelancer, business_owner, other]
+
+    Statement:
+      type: object
+      required: [id, userId, bankName, accountName, accountNumber, periodFrom, periodTo, status, transactionCount, totalCredits, totalDebits, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        bankName:
+          type: string
+        accountName:
+          type: string
+        accountNumber:
+          type: string
+        periodFrom:
+          type: string
+          format: date
+        periodTo:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [processing, ready, error]
+        transactionCount:
+          type: integer
+        totalCredits:
+          type: number
+        totalDebits:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+
+    StatementInput:
+      type: object
+      required: [bankName, accountName, accountNumber, periodFrom, periodTo, rawData]
+      properties:
+        bankName:
+          type: string
+        accountName:
+          type: string
+        accountNumber:
+          type: string
+        periodFrom:
+          type: string
+          format: date
+        periodTo:
+          type: string
+          format: date
+        rawData:
+          type: string
+          description: CSV or text content of bank statement
+
+    Transaction:
+      type: object
+      required: [id, statementId, date, description, amount, type, category, taxable, confidence]
+      properties:
+        id:
+          type: integer
+        statementId:
+          type: integer
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        amount:
+          type: number
+        type:
+          type: string
+          enum: [credit, debit]
+        category:
+          type: string
+          enum: [salary, freelance_income, business_income, investment, rent_received, transfer_in, transfer_out, bills, transport, food, entertainment, withdrawal, other]
+        taxable:
+          type: boolean
+        confidence:
+          type: number
+          description: AI classification confidence 0-1
+        notes:
+          type: ["string", "null"]
+
+    TransactionUpdate:
+      type: object
+      properties:
+        category:
+          type: string
+          enum: [salary, freelance_income, business_income, investment, rent_received, transfer_in, transfer_out, bills, transport, food, entertainment, withdrawal, other]
+        taxable:
+          type: boolean
+        notes:
+          type: string
+
+    TransactionSummary:
+      type: object
+      required: [statementId, totalIncome, taxableIncome, nonTaxableIncome, byCategory]
+      properties:
+        statementId:
+          type: integer
+        totalIncome:
+          type: number
+        taxableIncome:
+          type: number
+        nonTaxableIncome:
+          type: number
+        byCategory:
+          type: array
+          items:
+            type: object
+            required: [category, amount, taxable, count]
+            properties:
+              category:
+                type: string
+              amount:
+                type: number
+              taxable:
+                type: boolean
+              count:
+                type: integer
+
+    TaxCalculationInput:
+      type: object
+      required: [statementId, taxYear]
+      properties:
+        statementId:
+          type: integer
+        taxYear:
+          type: integer
+        includeReliefs:
+          type: boolean
+          default: true
+
+    TaxCalculation:
+      type: object
+      required: [id, userId, statementId, taxYear, grossIncome, taxableIncome, personalRelief, taxLiability, effectiveRate, bands, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        statementId:
+          type: integer
+        taxYear:
+          type: integer
+        grossIncome:
+          type: number
+        taxableIncome:
+          type: number
+        personalRelief:
+          type: number
+        taxLiability:
+          type: number
+        effectiveRate:
+          type: number
+        bands:
+          type: array
+          items:
+            type: object
+            required: [band, rate, taxableAmount, taxPayable]
+            properties:
+              band:
+                type: string
+              rate:
+                type: number
+              taxableAmount:
+                type: number
+              taxPayable:
+                type: number
+        status:
+          type: string
+          enum: [pending, calculated, paid, filed]
+        plainEnglishSummary:
+          type: ["string", "null"]
+        pidginSummary:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ChatMessage:
+      type: object
+      required: [id, role, content, language, createdAt]
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        language:
+          type: string
+          enum: [en, pidgin, ha, ig]
+        contextType:
+          type: ["string", "null"]
+          enum: [tax_explanation, filing_help, general, null]
+        createdAt:
+          type: string
+          format: date-time
+
+    ChatMessageInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        sessionId:
+          type: string
+        language:
+          type: string
+          enum: [en, pidgin, ha, ig]
+          default: en
+        taxCalculationId:
+          type: ["integer", "null"]
+
+    Payment:
+      type: object
+      required: [id, userId, taxCalculationId, amount, status, virtualAccountNumber, bankName, accountName, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        taxCalculationId:
+          type: integer
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [pending, confirmed, failed]
+        virtualAccountNumber:
+          type: string
+        bankName:
+          type: string
+        accountName:
+          type: string
+        reference:
+          type: string
+        paidAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentInput:
+      type: object
+      required: [taxCalculationId]
+      properties:
+        taxCalculationId:
+          type: integer
+
+    FilingSession:
+      type: object
+      required: [id, userId, taxCalculationId, currentStep, totalSteps, status, autoFillData, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        taxCalculationId:
+          type: integer
+        currentStep:
+          type: integer
+        totalSteps:
+          type: integer
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+        autoFillData:
+          type: object
+          description: Pre-filled TaxPro Max form data (all fields except password)
+          properties:
+            fullName:
+              type: string
+            tin:
+              type: string
+            taxYear:
+              type: integer
+            grossIncome:
+              type: number
+            taxableIncome:
+              type: number
+            personalRelief:
+              type: number
+            taxLiability:
+              type: number
+            employmentType:
+              type: string
+            bankName:
+              type: string
+            accountNumber:
+              type: string
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    FilingSessionInput:
+      type: object
+      required: [taxCalculationId]
+      properties:
+        taxCalculationId:
+          type: integer
+
+    FilingSessionUpdate:
+      type: object
+      properties:
+        currentStep:
+          type: integer
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+
+    DashboardSummary:
+      type: object
+      required: [totalTaxLiability, totalPaid, pendingPayments, filingStatus, latestCalculation, statementsCount, messagesCount]
+      properties:
+        totalTaxLiability:
+          type: number
+        totalPaid:
+          type: number
+        pendingPayments:
+          type: number
+        filingStatus:
+          type: string
+          enum: [not_started, in_progress, completed]
+        latestCalculation:
+          $ref: "#/components/schemas/TaxCalculation"
+        statementsCount:
+          type: integer
+        messagesCount:
+          type: integer
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"

@@ -1,10 +1,10 @@
-import express from "express";
+import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
-const app = express();
+const app: Express = express();
 
 app.use(
   pinoHttp({
@@ -25,11 +25,7 @@ app.use(
     },
   }),
 );
-const allowedOrigins = process.env.NODE_ENV === "production"
-  ? ["https://taxmata.vercel.app"]
-  : true; // allow all in development
-
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
