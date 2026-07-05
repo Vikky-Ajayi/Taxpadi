@@ -1,9 +1,12 @@
 /**
- * Builds just src/app.ts (no listen() call) for the Vercel serverless function.
- * Output: dist/app.mjs
+ * Builds src/app.ts (no listen() call) for the Vercel serverless function.
+ * Output: dist/app.cjs  (CommonJS)
  *
- * We skip esbuild-plugin-pino here because Vercel captures stdout directly —
- * pino-pretty worker threads aren't needed in a serverless environment.
+ * CJS format keeps pg's `try { require('pg-native') } catch {}` pattern intact
+ * as a lazy synchronous require — safe to omit pg-native at runtime.
+ * ESM format would hoist it to an unconditional top-level import and crash.
+ *
+ * pino-pretty workers are skipped — Vercel captures stdout directly.
  */
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -19,25 +22,14 @@ await esbuild({
   entryPoints: [path.resolve(artifactDir, "src/app.ts")],
   platform: "node",
   bundle: true,
-  format: "esm",
-  outfile: path.resolve(distDir, "app.mjs"),
+  format: "cjs",
+  outfile: path.resolve(distDir, "app.cjs"),
   logLevel: "info",
   external: [
     "*.node",
-    "pg-native",
-    // pino transports run as workers — not needed in Vercel serverless
+    // pino transports run as worker threads — not available in serverless
     "pino-pretty",
     "thread-stream",
   ],
   sourcemap: "linked",
-  // CJS interop shim — required for express, cors, pino-http, etc.
-  banner: {
-    js: `import { createRequire as __bannerCrReq } from 'node:module';
-import __bannerPath from 'node:path';
-import __bannerUrl from 'node:url';
-globalThis.require = __bannerCrReq(import.meta.url);
-globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
-globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
-`,
-  },
 });
