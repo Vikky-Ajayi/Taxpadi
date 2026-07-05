@@ -1,0 +1,1 @@
+- [TaxPay Replit port](taxpay-port.md) — auth token must be wired via setAuthTokenGetter in AuthProvider; SESSION_SECRET already in workspace secrets
