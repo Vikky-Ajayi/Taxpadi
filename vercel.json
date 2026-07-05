@@ -4,7 +4,8 @@
   "outputDirectory": "artifacts/taxpay/dist/public",
   "framework": null,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/server" }
+    { "source": "/api/(.*)", "destination": "/api/server" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/server.js": {
