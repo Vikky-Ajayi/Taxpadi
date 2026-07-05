@@ -1,7 +1,19 @@
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
-import { createSign, createVerify } from "crypto";
 
-const SESSION_SECRET = process.env.SESSION_SECRET || "taxpay-dev-secret-key-2025";
+// In production, SESSION_SECRET must be explicitly set — no hardcoded fallback.
+// In development/test, a default is allowed so the dev server starts without config.
+const SESSION_SECRET = (() => {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "SESSION_SECRET must be set in production. Set it as an environment variable."
+      );
+    }
+    return "taxpay-dev-secret-key-2025"; // dev-only fallback
+  }
+  return secret;
+})();
 
 // Simple HMAC-based token (no external deps needed)
 function base64url(buf: Buffer | string): string {

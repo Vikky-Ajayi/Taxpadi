@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { filingSessionsTable, taxCalculationsTable, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { CreateFilingSessionBody, UpdateFilingSessionBody } from "@workspace/api-zod";
 
@@ -20,8 +20,9 @@ router.post("/sessions", async (req, res) => {
   if (!parsed.success) { res.status(400).json({ error: "Invalid request" }); return; }
 
   const [calc] = await db.select().from(taxCalculationsTable)
-    .where(eq(taxCalculationsTable.id, parsed.data.taxCalculationId)).limit(1);
-  if (!calc || calc.userId !== user.id) { res.status(404).json({ error: "Calculation not found" }); return; }
+    .where(and(eq(taxCalculationsTable.id, parsed.data.taxCalculationId), eq(taxCalculationsTable.userId, user.id)))
+    .limit(1);
+  if (!calc) { res.status(404).json({ error: "Calculation not found" }); return; }
 
   // Build auto-fill data for TaxPro Max
   const autoFillData = {
@@ -52,8 +53,12 @@ router.post("/sessions", async (req, res) => {
 router.get("/sessions/:id", async (req, res) => {
   const user = (req as unknown as { user: typeof usersTable.$inferSelect }).user;
   const id = parseInt(req.params.id);
-  const [session] = await db.select().from(filingSessionsTable).where(eq(filingSessionsTable.id, id)).limit(1);
-  if (!session || session.userId !== user.id) { res.status(404).json({ error: "Not found" }); return; }
+  const [session] = await db
+    .select()
+    .from(filingSessionsTable)
+    .where(and(eq(filingSessionsTable.id, id), eq(filingSessionsTable.userId, user.id)))
+    .limit(1);
+  if (!session) { res.status(404).json({ error: "Not found" }); return; }
   res.json(session);
 });
 
@@ -63,6 +68,14 @@ router.patch("/sessions/:id", async (req, res) => {
   const parsed = UpdateFilingSessionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid data" }); return; }
 
+  // Verify ownership FIRST — then update
+  const [existing] = await db
+    .select()
+    .from(filingSessionsTable)
+    .where(and(eq(filingSessionsTable.id, id), eq(filingSessionsTable.userId, user.id)))
+    .limit(1);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
   const updates: Partial<typeof filingSessionsTable.$inferInsert> = {};
   if (parsed.data.currentStep !== undefined) updates.currentStep = parsed.data.currentStep;
   if (parsed.data.status !== undefined) {
@@ -70,12 +83,18 @@ router.patch("/sessions/:id", async (req, res) => {
     if (parsed.data.status === "completed") updates.completedAt = new Date();
   }
 
-  const [updated] = await db.update(filingSessionsTable).set(updates).where(eq(filingSessionsTable.id, id)).returning();
-  if (!updated || updated.userId !== user.id) { res.status(404).json({ error: "Not found" }); return; }
+  const [updated] = await db
+    .update(filingSessionsTable)
+    .set(updates)
+    .where(and(eq(filingSessionsTable.id, id), eq(filingSessionsTable.userId, user.id)))
+    .returning();
 
   // Update tax calculation status to "filed" when completed
-  if (parsed.data.status === "completed") {
-    await db.update(taxCalculationsTable).set({ status: "filed" }).where(eq(taxCalculationsTable.id, updated.taxCalculationId));
+  if (parsed.data.status === "completed" && updated) {
+    await db
+      .update(taxCalculationsTable)
+      .set({ status: "filed" })
+      .where(and(eq(taxCalculationsTable.id, updated.taxCalculationId), eq(taxCalculationsTable.userId, user.id)));
   }
 
   res.json(updated);

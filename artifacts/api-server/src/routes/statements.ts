@@ -10,8 +10,6 @@ const router = Router();
 
 router.use(requireAuth);
 
-type AuthReq = typeof import("express").Router & { user: typeof usersTable.$inferSelect };
-
 router.get("/", async (req, res) => {
   const user = (req as unknown as { user: typeof usersTable.$inferSelect }).user;
   const statements = await db.select().from(statementsTable).where(eq(statementsTable.userId, user.id));
@@ -84,8 +82,17 @@ router.get("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const user = (req as unknown as { user: typeof usersTable.$inferSelect }).user;
   const id = parseInt(req.params.id);
+
+  // Verify ownership FIRST — only then delete child rows
+  const [stmt] = await db
+    .select()
+    .from(statementsTable)
+    .where(and(eq(statementsTable.id, id), eq(statementsTable.userId, user.id)))
+    .limit(1);
+  if (!stmt) { res.status(404).json({ error: "Not found" }); return; }
+
   await db.delete(transactionsTable).where(eq(transactionsTable.statementId, id));
-  await db.delete(statementsTable).where(and(eq(statementsTable.id, id), eq(statementsTable.userId, user.id)));
+  await db.delete(statementsTable).where(eq(statementsTable.id, id));
   res.json({ message: "Deleted" });
 });
 

@@ -1,19 +1,37 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { transactionsTable, statementsTable, usersTable } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { UpdateTransactionBody } from "@workspace/api-zod";
 
 const router = Router();
 router.use(requireAuth);
 
+// Helper: verify a statementId belongs to the authenticated user.
+// Returns the statement or null.
+async function getOwnedStatement(statementId: number, userId: number) {
+  const [stmt] = await db
+    .select()
+    .from(statementsTable)
+    .where(and(eq(statementsTable.id, statementId), eq(statementsTable.userId, userId)))
+    .limit(1);
+  return stmt ?? null;
+}
+
 router.get("/summary", async (req, res) => {
   const user = (req as unknown as { user: typeof usersTable.$inferSelect }).user;
   const statementId = parseInt(req.query.statementId as string);
   if (!statementId) { res.status(400).json({ error: "statementId required" }); return; }
 
-  const txns = await db.select().from(transactionsTable).where(eq(transactionsTable.statementId, statementId));
+  // Enforce ownership before reading transactions
+  const stmt = await getOwnedStatement(statementId, user.id);
+  if (!stmt) { res.status(404).json({ error: "Statement not found" }); return; }
+
+  const txns = await db
+    .select()
+    .from(transactionsTable)
+    .where(eq(transactionsTable.statementId, statementId));
 
   const totalIncome = txns.filter(t => t.type === "credit").reduce((s, t) => s + Number(t.amount), 0);
   const taxableIncome = txns.filter(t => t.type === "credit" && t.taxable).reduce((s, t) => s + Number(t.amount), 0);
@@ -46,15 +64,29 @@ router.get("/", async (req, res) => {
   const user = (req as unknown as { user: typeof usersTable.$inferSelect }).user;
   const { statementId, category, taxable } = req.query;
 
-  let query = db.select().from(transactionsTable).$dynamic();
-  const conditions = [];
+  if (statementId) {
+    // Verify the requested statement belongs to this user before returning its transactions
+    const sid = parseInt(statementId as string);
+    const stmt = await getOwnedStatement(sid, user.id);
+    if (!stmt) { res.status(404).json({ error: "Statement not found" }); return; }
 
-  if (statementId) conditions.push(eq(transactionsTable.statementId, parseInt(statementId as string)));
-  if (category) conditions.push(eq(transactionsTable.category, category as string));
-  if (taxable !== undefined) conditions.push(eq(transactionsTable.taxable, taxable === "true"));
+    const conditions = [eq(transactionsTable.statementId, sid)];
+    if (category) conditions.push(eq(transactionsTable.category, category as string));
+    if (taxable !== undefined) conditions.push(eq(transactionsTable.taxable, taxable === "true"));
 
-  const txns = await (conditions.length > 0 ? query.where(and(...conditions)) : query);
-  res.json(txns.map(t => ({ ...t, amount: Number(t.amount) })));
+    const txns = await db.select().from(transactionsTable).where(and(...conditions));
+    res.json(txns.map(t => ({ ...t, amount: Number(t.amount) })));
+    return;
+  }
+
+  // No statementId filter: scope to the user's own statements via a join
+  const rows = await db
+    .select({ txn: transactionsTable })
+    .from(transactionsTable)
+    .innerJoin(statementsTable, eq(transactionsTable.statementId, statementsTable.id))
+    .where(eq(statementsTable.userId, user.id));
+
+  res.json(rows.map(r => ({ ...r.txn, amount: Number(r.txn.amount) })));
 });
 
 router.patch("/:id", async (req, res) => {
@@ -63,12 +95,27 @@ router.patch("/:id", async (req, res) => {
   const parsed = UpdateTransactionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid data" }); return; }
 
+  // Verify the transaction belongs to the user (via its parent statement)
+  const [existing] = await db
+    .select({ txn: transactionsTable })
+    .from(transactionsTable)
+    .innerJoin(statementsTable, eq(transactionsTable.statementId, statementsTable.id))
+    .where(and(eq(transactionsTable.id, id), eq(statementsTable.userId, user.id)))
+    .limit(1);
+
+  if (!existing) { res.status(404).json({ error: "Transaction not found" }); return; }
+
   const updates: Partial<typeof transactionsTable.$inferInsert> = {};
   if (parsed.data.category !== undefined) updates.category = parsed.data.category;
   if (parsed.data.taxable !== undefined) updates.taxable = parsed.data.taxable;
   if (parsed.data.notes !== undefined) updates.notes = parsed.data.notes;
 
-  const [updated] = await db.update(transactionsTable).set(updates).where(eq(transactionsTable.id, id)).returning();
+  const [updated] = await db
+    .update(transactionsTable)
+    .set(updates)
+    .where(eq(transactionsTable.id, id))
+    .returning();
+
   res.json({ ...updated, amount: Number(updated.amount) });
 });
 

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { taxCalculationsTable, transactionsTable, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { taxCalculationsTable, transactionsTable, statementsTable, usersTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { calculateNigerianTax, generatePlainEnglishSummary, generatePidginSummary } from "../lib/tax-engine.js";
 import { CalculateTaxBody } from "@workspace/api-zod";
@@ -27,8 +27,18 @@ router.post("/calculate", async (req, res) => {
 
   const { statementId, taxYear, includeReliefs } = parsed.data;
 
+  // Verify the statement belongs to the authenticated user before reading its transactions
+  const [stmt] = await db
+    .select()
+    .from(statementsTable)
+    .where(and(eq(statementsTable.id, statementId), eq(statementsTable.userId, user.id)))
+    .limit(1);
+  if (!stmt) { res.status(404).json({ error: "Statement not found" }); return; }
+
   // Sum taxable income from classified transactions
-  const txns = await db.select().from(transactionsTable)
+  const txns = await db
+    .select()
+    .from(transactionsTable)
     .where(eq(transactionsTable.statementId, statementId));
 
   const grossIncome = txns
@@ -67,8 +77,9 @@ router.get("/calculations/:id", async (req, res) => {
   const user = (req as unknown as { user: typeof usersTable.$inferSelect }).user;
   const id = parseInt(req.params.id);
   const [calc] = await db.select().from(taxCalculationsTable)
-    .where(eq(taxCalculationsTable.id, id)).limit(1);
-  if (!calc || calc.userId !== user.id) { res.status(404).json({ error: "Not found" }); return; }
+    .where(and(eq(taxCalculationsTable.id, id), eq(taxCalculationsTable.userId, user.id)))
+    .limit(1);
+  if (!calc) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serializeCalc(calc));
 });
 

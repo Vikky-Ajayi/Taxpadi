@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { paymentsTable, taxCalculationsTable, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { CreatePaymentBody } from "@workspace/api-zod";
 import { randomBytes } from "crypto";
@@ -35,8 +35,9 @@ router.post("/", async (req, res) => {
   if (!parsed.success) { res.status(400).json({ error: "Invalid request" }); return; }
 
   const [calc] = await db.select().from(taxCalculationsTable)
-    .where(eq(taxCalculationsTable.id, parsed.data.taxCalculationId)).limit(1);
-  if (!calc || calc.userId !== user.id) { res.status(404).json({ error: "Calculation not found" }); return; }
+    .where(and(eq(taxCalculationsTable.id, parsed.data.taxCalculationId), eq(taxCalculationsTable.userId, user.id)))
+    .limit(1);
+  if (!calc) { res.status(404).json({ error: "Calculation not found" }); return; }
 
   const va = generateVirtualAccount();
   const reference = "TXPAY" + randomBytes(6).toString("hex").toUpperCase();
@@ -59,8 +60,9 @@ router.get("/:id", async (req, res) => {
   const user = (req as unknown as { user: typeof usersTable.$inferSelect }).user;
   const id = parseInt(req.params.id);
   const [payment] = await db.select().from(paymentsTable)
-    .where(eq(paymentsTable.id, id)).limit(1);
-  if (!payment || payment.userId !== user.id) { res.status(404).json({ error: "Not found" }); return; }
+    .where(and(eq(paymentsTable.id, id), eq(paymentsTable.userId, user.id)))
+    .limit(1);
+  if (!payment) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serializePayment(payment));
 });
 
@@ -68,17 +70,24 @@ router.post("/:id/confirm", async (req, res) => {
   const user = (req as unknown as { user: typeof usersTable.$inferSelect }).user;
   const id = parseInt(req.params.id);
 
-  const [payment] = await db.update(paymentsTable)
-    .set({ status: "confirmed", paidAt: new Date() })
-    .where(eq(paymentsTable.id, id))
-    .returning();
+  // Verify ownership FIRST, then update — avoids updating another user's payment
+  const [existing] = await db
+    .select()
+    .from(paymentsTable)
+    .where(and(eq(paymentsTable.id, id), eq(paymentsTable.userId, user.id)))
+    .limit(1);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
-  if (!payment || payment.userId !== user.id) { res.status(404).json({ error: "Not found" }); return; }
+  const [payment] = await db
+    .update(paymentsTable)
+    .set({ status: "confirmed", paidAt: new Date() })
+    .where(and(eq(paymentsTable.id, id), eq(paymentsTable.userId, user.id)))
+    .returning();
 
   // Update tax calculation status to "paid"
   await db.update(taxCalculationsTable)
     .set({ status: "paid" })
-    .where(eq(taxCalculationsTable.id, payment.taxCalculationId));
+    .where(and(eq(taxCalculationsTable.id, payment.taxCalculationId), eq(taxCalculationsTable.userId, user.id)));
 
   res.json(serializePayment(payment));
 });
